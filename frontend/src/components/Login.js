@@ -10,7 +10,7 @@ export default function Login({ setToken }) {
 
   const handleLogin = async () => {
     try {
-      const res = await axios.post("http://192.168.1.134:5000/login", { username, password });
+      const res = await axios.post("http://192.168.1.137:5000/login", { username, password });
       const token = res.data.token;
       setToken(token);
       localStorage.setItem("authToken", token); // Guarda el token en localStorage

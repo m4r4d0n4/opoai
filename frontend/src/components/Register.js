@@ -6,7 +6,7 @@ export default function Register({ setView }) {
   const [password, setPassword] = useState("");
 
   const handleRegister = async () => {
-    await axios.post("http://192.168.1.134:5000/register", { username, password });
+    await axios.post("http://192.168.1.137:5000/register", { username, password });
     setView("login");
   };
 
