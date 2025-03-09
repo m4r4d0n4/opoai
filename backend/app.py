@@ -12,7 +12,7 @@ bcrypt = Bcrypt(app)
 jwt = JWTManager(app)
 
 DB_FILE = "database.db"
-PRIVATE_SERVER = "http://192.168.1.134:5678"  # Cambia esto por la IP de tu servidor privado
+PRIVATE_SERVER = "http://192.168.1.137:15678"  # Cambia esto por la IP de tu servidor privado
 
 # Función para conectar con SQLite
 def get_db_connection():

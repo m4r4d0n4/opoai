@@ -16,7 +16,7 @@ export default function Chat({ token, topic }) {
 
     try {
       const response = await axios.post(
-        `http://192.168.1.134:5678/webhook/opo-chat`, // Usa el campo db para la URL
+        `http://192.168.1.137:5678/webhook/opo-chat`, // Usa el campo db para la URL
         { sessionId: sessionId, message: input, file_id:topic.file_id }
       );
 

@@ -10,7 +10,7 @@ export default function TopicSelection({ setSelectedTopic }) {
   useEffect(() => {
     const fetchTopics = async () => {
       try {
-        const response = await axios.get("http://192.168.1.134:5678/webhook/temas");
+        const response = await axios.get("http://192.168.1.137:5678/webhook/temas");
         // Verifica si la respuesta es un array o un objeto
         if (Array.isArray(response.data)) {
           setTopics(response.data);
