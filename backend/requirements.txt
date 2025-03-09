@@ -1,0 +1,9 @@
+# backend/requirements.txt
+flask
+pyjwt
+bcrypt
+psycopg2
+flask-cors
+flask_bcrypt
+flask_jwt_extended
+requests

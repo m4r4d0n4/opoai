@@ -1,0 +1,29 @@
+version: '3.8'
+
+services:
+  backend:
+    build: ./backend
+    ports:
+      - "5000:5000"
+    env_file:
+      - .env
+    depends_on:
+      - db
+
+  db:
+    image: postgres:13
+    restart: always
+    env_file:
+      - .env
+    ports:
+      - "15432:5432"
+    volumes:
+      - ./db_data:/var/lib/postgresql/data
+      - ./backend/db_init.sql:/docker-entrypoint-initdb.d/db_init.sql
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend

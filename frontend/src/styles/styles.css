@@ -1,0 +1,231 @@
+/* Estilos globales */
+body, html {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  font-family: 'Arial', sans-serif;
+  background-color: #121212; /* Fondo oscuro */
+  color: #e0e0e0; /* Texto claro */
+  display: flex;
+  flex-direction: column;
+}
+
+/* Contenedor principal */
+.container {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding-top: 60px; /* Espacio para el header */
+}
+
+/* Estilos del chat */
+.chat-box {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 1000px; /* Ancho máximo del chat */
+  height: calc(100vh - 60px); /* Altura total menos el header */
+  background-color: #1e1e1e; /* Fondo del chat */
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.chat-box h2 {
+  margin: 0;
+  padding: 10px;
+  background-color: #333;
+  color: #e0e0e0;
+  text-align: center;
+}
+
+.messages {
+  flex: 1;
+  padding: 10px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column; /* Mensajes en orden natural */
+}
+
+.messages li {
+  margin: 5px 0;
+  padding: 10px;
+  border-radius: 20px;
+  max-width: 80%;
+  word-wrap: break-word;
+}
+
+.user-message {
+  background-color: #3a3a3a; /* Burbuja gris para el usuario */
+  color: #e0e0e0;
+  align-self: flex-end;
+}
+
+.bot-message {
+  background-color: #a8dadc; /* Burbuja verde claro para el bot */
+  color: #000;
+  align-self: flex-start;
+}
+
+.bot-message div {
+  color: #000; /* Asegura que el texto dentro del HTML generado sea negro */
+}
+
+.input-container {
+  display: flex;
+  padding: 10px;
+  background-color: #333;
+}
+
+.input-container input {
+  flex: 1;
+  padding: 10px;
+  margin-right: 5px;
+  border: 1px solid #444;
+  border-radius: 4px;
+  background-color: #2c2c2c;
+  color: #e0e0e0;
+}
+
+.input-container button {
+  padding: 10px 20px;
+  background-color: #444;
+  color: #e0e0e0;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.input-container button:hover {
+  background-color: #555;
+}
+
+/* Estilos del header */
+.header {
+  width: 100%;
+  padding: 10px 20px;
+  background-color: #1e1e1e;
+  color: #e0e0e0;
+  text-align: center;
+  position: fixed;
+  top: 0;
+  left: 0;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+}
+
+.header h1 {
+  margin: 0;
+  font-size: 24px;
+}
+
+.slogan {
+  margin: 0;
+  font-size: 14px;
+  color: #a8dadc;
+}
+
+/* Estilos del formulario de autenticación */
+.auth-box {
+  width: 100%;
+  max-width: 400px;
+  padding: 20px;
+  background-color: #1e1e1e;
+  border-radius: 8px;
+  box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
+  text-align: center;
+}
+
+.auth-box h2 {
+  margin-bottom: 20px;
+  color: #e0e0e0;
+}
+
+.auth-box input {
+  width: 100%;
+  padding: 10px;
+  margin: 10px 0;
+  border: 1px solid #444;
+  border-radius: 4px;
+  background-color: #2c2c2c;
+  color: #e0e0e0;
+}
+
+.auth-box button {
+  width: 100%;
+  padding: 10px;
+  margin-top: 10px;
+  background-color: #444;
+  color: #e0e0e0;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.auth-box button:hover {
+  background-color: #555;
+}
+
+.error {
+  color: #ff6b6b; /* Rojo suave para errores */
+  margin-top: 10px;
+}
+
+.link {
+  color: #76c7c0; /* Azul verdoso para enlaces */
+  cursor: pointer;
+  transition: color 0.3s;
+}
+
+.link:hover {
+  color: #a8dadc;
+}
+
+/* Estilos para la selección de temas */
+.topic-selection {
+  width: 100%;
+  max-width: 600px;
+  padding: 20px;
+  background-color: #1e1e1e;
+  border-radius: 8px;
+  box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
+  text-align: center;
+}
+
+.topic-selection h2 {
+  margin-bottom: 20px;
+  color: #e0e0e0;
+}
+
+.topic-selection input {
+  width: 100%;
+  padding: 10px;
+  margin-bottom: 20px;
+  border: 1px solid #444;
+  border-radius: 4px;
+  background-color: #2c2c2c;
+  color: #e0e0e0;
+}
+
+.topic-selection ul {
+  list-style: none;
+  padding: 0;
+}
+
+.topic-selection li {
+  padding: 15px;
+  margin: 10px 0;
+  background-color: #2c2c2c;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.3s, transform 0.2s;
+  color: #e0e0e0;
+  font-weight: bold;
+}
+
+.topic-selection li:hover {
+  background-color: #3a3a3a;
+  transform: scale(1.02);
+}

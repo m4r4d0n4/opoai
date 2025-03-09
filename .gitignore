@@ -1,0 +1,7 @@
+# Ignorar archivos de entorno
+.env
+.env.local
+.env.*.local
+
+# Ignorar volúmenes de bases de datos
+db_data/
