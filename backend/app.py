@@ -1,7 +1,7 @@
 from flask import Flask, request, jsonify, redirect
 from flask_cors import CORS
 from flask_bcrypt import Bcrypt
-from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
+from flask_jwt_extended import get_jwt, JWTManager, create_access_token, jwt_required, get_jwt_identity
 import sqlite3
 import requests  # Para hacer peticiones HTTP al servidor privado
 
@@ -56,7 +56,7 @@ def login():
     user = cursor.fetchone()
     
     if user and bcrypt.check_password_hash(user["password"], data["password"]):
-        token = create_access_token(identity={"username": user["username"], "role": user["role"]})
+        token = create_access_token(identity=user["username"], additional_claims={"role": user["role"]})
         return jsonify(token=token, role=user["role"])
     
     return jsonify({"message": "Invalid credentials"}), 401
@@ -65,7 +65,7 @@ def login():
 @app.route('/register', methods=['POST'])
 @jwt_required()
 def register():
-    current_user = get_jwt_identity()
+    current_user = get_jwt()
     if current_user["role"] != "admin":
         return jsonify({"message": "Unauthorized"}), 403
 
