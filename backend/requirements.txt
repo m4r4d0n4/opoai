@@ -3,8 +3,5 @@ fastapi
 uvicorn
 fastapi_sso
 requests
-python-jose
-passlib
 python-multipart
-psycopg2
 fastapi-cors
