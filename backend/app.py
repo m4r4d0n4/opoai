@@ -161,7 +161,7 @@ async def check_auth(current_user: dict = Depends(get_current_user)):
 async def get_temas(current_user: dict = Depends(get_current_user)):
     try:
         async with httpx.AsyncClient(verify=False) as client:
-            response = await client.post("https://192.168.1.137:5678/webhook/temas")
+            response = await client.get("https://192.168.1.137:5678/webhook/temas")
             response.raise_for_status()  # Raise HTTPError for bad responses (4xx or 5xx)
             return JSONResponse(content=response.json(), status_code=response.status_code)
     except httpx.RequestError as e:
