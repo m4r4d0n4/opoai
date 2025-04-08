@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Depends, HTTPException, status, Request, Response
+from fastapi import FastAPI, Depends, HTTPException, status, Request, Response, Security
 from fastapi.responses import RedirectResponse
 from fastapi.middleware.cors import CORSMiddleware
 from datetime import datetime, timedelta
@@ -7,7 +7,7 @@ import requests
 import os
 from fastapi_sso.sso.google import GoogleSSO
 from jose import JWTError, jwt
-from fastapi.security import APIKeyCookie, Security
+from fastapi.security import APIKeyCookie
 
 app = FastAPI()
 
