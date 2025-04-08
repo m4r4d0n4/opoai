@@ -7,3 +7,6 @@ flask-cors
 flask_bcrypt
 flask_jwt_extended
 requests
+fastapi_sso
+fastapi
+python-multipart

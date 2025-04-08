@@ -4,12 +4,21 @@ from flask_bcrypt import Bcrypt
 from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
 import sqlite3
 import requests  # Para hacer peticiones HTTP al servidor privado
+from fastapi import FastAPI
+from starlette.requests import Request
+from fastapi_sso.sso.google import GoogleSSO
+import os
 
 app = Flask(__name__)
 app.config['JWT_SECRET_KEY'] = 'supersecretkey'  # Cambia esto en producción
 CORS(app)
 bcrypt = Bcrypt(app)
 jwt = JWTManager(app)
+
+CLIENT_ID = os.environ.get("ID_CLIENTE")
+CLIENT_SECRET = os.environ.get("SECRETO_CLIENTE")
+
+google_sso = GoogleSSO(CLIENT_ID, CLIENT_SECRET, "https://app.opoai.es:5000/google/callback")
 
 DB_FILE = "database.db"
 PRIVATE_SERVER = "http://192.168.1.137:15678"  # Cambia esto por la IP de tu servidor privado
@@ -45,29 +54,31 @@ def init_db():
 
 init_db()
 
+@app.get("/google/login")
+async def google_login():
+    async with google_sso:
+        return await google_sso.get_login_redirect()
+
+@app.get("/google/callback")
+async def google_callback(request: Request):
+    async with google_sso:
+        user = await google_sso.verify_and_process(request)
+    # Here you should create or update user in your database
+    # and then create a session for the user
+    return user
+
 # Endpoint de login
 @app.route('/login', methods=['POST'])
 def login():
-    data = request.json
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    
-    cursor.execute("SELECT * FROM users WHERE username = ?", (data['username'],))
-    user = cursor.fetchone()
-    
-    if user and bcrypt.check_password_hash(user["password"], data["password"]):
-        token = create_access_token(identity={"username": user["username"], "role": user["role"]})
-        return jsonify(token=token, role=user["role"])
-    
-    return jsonify({"message": "Invalid credentials"}), 401
+    # This endpoint should be modified to use Google SSO
+    return jsonify({"message": "Please login with Google SSO"}), 401
 
 # Endpoint de registro (solo accesible por admin)
 @app.route('/register', methods=['POST'])
 @jwt_required()
 def register():
-    current_user = get_jwt_identity()
-    if current_user["role"] != "admin":
-        return jsonify({"message": "Unauthorized"}), 403
+    # This endpoint should be modified to use Google SSO
+    return jsonify({"message": "Please login with Google SSO"}), 403
 
     data = request.json
     hashed_password = bcrypt.generate_password_hash(data["password"]).decode('utf-8')
