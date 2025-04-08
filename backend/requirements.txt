@@ -5,3 +5,4 @@ fastapi_sso
 requests
 python-multipart
 fastapi-cors
+python-jose
