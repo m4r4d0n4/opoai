@@ -1,5 +1,5 @@
 from fastapi import FastAPI, Depends, HTTPException, status, Request, Response, Security
-from fastapi.responses import RedirectResponse
+from fastapi.responses import RedirectResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from datetime import datetime, timedelta
 import sqlite3
@@ -137,13 +137,21 @@ async def google_callback(request: Request, response: Response):
             value=access_token,
             httponly=True,
             samesite="lax",
-            secure=False, # set to True in production
+            secure=True, # set to True in production
         )
 
         # Redirect to protected endpoint
         return RedirectResponse(url="https://app.opoai.es:3434/temas", status_code=302)
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+
+# --- Check Auth Endpoint ---
+@app.get("/check-auth")
+async def check_auth(current_user: dict = Depends(get_current_user)):
+    return JSONResponse({
+        "email": current_user["sub"],
+        "role": current_user["role"]
+    })
 
 # --- Change Role Endpoint ---
 @app.post("/change_role")
