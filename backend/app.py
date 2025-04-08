@@ -142,7 +142,7 @@ async def google_callback(request: Request, response: Response):
         )
 
         # Redirect to protected endpoint
-        return RedirectResponse(url="https://app.opoai.es:3434/temas", status_code=302)
+        return RedirectResponse(url="https://app.opoai.es:3434/auth-callback", status_code=302)
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
