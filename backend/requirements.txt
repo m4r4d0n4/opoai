@@ -1,12 +1,10 @@
 # backend/requirements.txt
-flask
-pyjwt
-bcrypt
-psycopg2
-flask-cors
-flask_bcrypt
-flask_jwt_extended
-requests
-fastapi_sso
 fastapi
+uvicorn
+fastapi_sso
+requests
+python-jose
+passlib
 python-multipart
+psycopg2
+fastapi-cors

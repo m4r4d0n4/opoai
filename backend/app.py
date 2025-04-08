@@ -1,35 +1,53 @@
-from flask import Flask, request, jsonify, redirect
-from flask_cors import CORS
-from flask_bcrypt import Bcrypt
-from flask_jwt_extended import get_jwt, JWTManager, create_access_token, jwt_required, get_jwt_identity
+from fastapi import FastAPI, Depends, HTTPException, status, Request
+from fastapi.responses import JSONResponse, RedirectResponse
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from jose import JWTError, jwt
+from passlib.context import CryptContext
+from datetime import datetime, timedelta
 import sqlite3
-import requests  # Para hacer peticiones HTTP al servidor privado
-from fastapi import FastAPI
-from starlette.requests import Request
-from fastapi_sso.sso.google import GoogleSSO
+import requests
 import os
+from fastapi_sso.sso.google import GoogleSSO
 
-app = Flask(__name__)
-app.config['JWT_SECRET_KEY'] = 'supersecretkey'  # Cambia esto en producción
-CORS(app)
-bcrypt = Bcrypt(app)
-jwt = JWTManager(app)
+app = FastAPI()
 
+# CORS configuration
+origins = ["*"]  # Allow all origins
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Security settings
+JWT_SECRET_KEY = os.environ.get("JWT_SECRET", "supersecretkey")  # Change this in production
+ALGORITHM = "HS256"
+ACCESS_TOKEN_EXPIRE_MINUTES = 30
+
+# Database settings
+DB_FILE = "database.db"
+PRIVATE_SERVER = "http://192.168.1.137:15678"  # Change this to your private server IP
+
+# Bcrypt context
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+# Google SSO settings
 CLIENT_ID = os.environ.get("ID_CLIENTE")
 CLIENT_SECRET = os.environ.get("SECRETO_CLIENTE")
+GOOGLE_CALLBACK_URL = "https://app.opoai.es:5000/google/callback"
 
-google_sso = GoogleSSO(CLIENT_ID, CLIENT_SECRET, "https://app.opoai.es:5000/google/callback")
+google_sso = GoogleSSO(CLIENT_ID, CLIENT_SECRET, GOOGLE_CALLBACK_URL)
 
-DB_FILE = "database.db"
-PRIVATE_SERVER = "http://192.168.1.137:15678"  # Cambia esto por la IP de tu servidor privado
-
-# Función para conectar con SQLite
+# Database connection function
 def get_db_connection():
     conn = sqlite3.connect(DB_FILE)
     conn.row_factory = sqlite3.Row
     return conn
 
-# Crear la base de datos con usuario admin por defecto
+# Initialize database
 def init_db():
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -43,81 +61,110 @@ def init_db():
     """)
     conn.commit()
 
-    # Crear usuario admin por defecto si no existe
+    # Create default admin user if not exists
     cursor.execute("SELECT * FROM users WHERE username = ?", ("admin",))
     if not cursor.fetchone():
-        hashed_password = bcrypt.generate_password_hash("admin123").decode('utf-8')
-        cursor.execute("INSERT INTO users (username, password, role) VALUES (?, ?, ?)", 
+        hashed_password = pwd_context.hash("admin123")
+        cursor.execute("INSERT INTO users (username, password, role) VALUES (?, ?, ?)",
                        ("admin", hashed_password, "admin"))
         conn.commit()
     conn.close()
 
 init_db()
 
+# --- Google SSO Endpoints ---
 @app.get("/google/login")
 async def google_login():
-    async with google_sso:
-        return await google_sso.get_login_redirect()
+    return await google_sso.get_login_redirect()
 
 @app.get("/google/callback")
 async def google_callback(request: Request):
-    async with google_sso:
+    try:
         user = await google_sso.verify_and_process(request)
-    # Here you should create or update user in your database
-    # and then create a session for the user
-    return user
+        # Here you should create or update user in your database
+        # and then create a session for the user
+        # For now, just return the user info
+        return JSONResponse(user)
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
-# Endpoint de login
-@app.route('/login', methods=['POST'])
-def login():
-    data = request.json
+# --- Authentication ---
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+
+def create_access_token(data: dict, expires_delta: timedelta = None):
+    to_encode = data.copy()
+    if expires_delta:
+        expire = datetime.utcnow() + expires_delta
+    else:
+        expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    to_encode.update({"exp": expire})
+    encoded_jwt = jwt.encode(to_encode, JWT_SECRET_KEY, algorithm=ALGORITHM)
+    return encoded_jwt
+
+async def get_current_user(token: str = Depends(oauth2_scheme)):
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    try:
+        payload = jwt.decode(token, JWT_SECRET_KEY, algorithms=[ALGORITHM])
+        username: str = payload.get("sub")
+        if username is None:
+            raise credentials_exception
+        # You might want to fetch user details from the database here
+        return {"username": username, "role": payload.get("role", "user")}
+    except JWTError:
+        raise credentials_exception
+
+@app.post("/token")
+async def login(form_data: OAuth2PasswordRequestForm = Depends()):
     conn = get_db_connection()
     cursor = conn.cursor()
-    
-    cursor.execute("SELECT * FROM users WHERE username = ?", (data['username'],))
+    cursor.execute("SELECT * FROM users WHERE username = ?", (form_data.username,))
     user = cursor.fetchone()
-    
-    if user and bcrypt.check_password_hash(user["password"], data["password"]):
-        token = create_access_token(identity=user["username"], additional_claims={"role": user["role"]})
-        return jsonify(token=token, role=user["role"])
-    
-    return jsonify({"message": "Invalid credentials"}), 401
+    conn.close()
 
-# Endpoint de registro (solo accesible por admin)
-@app.route('/register', methods=['POST'])
-@jwt_required()
-def register():
-    current_user = get_jwt()
+    if not user or not pwd_context.verify(form_data.password, user["password"]):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect username or password",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token = create_access_token(
+        data={"sub": user["username"], "role": user["role"]}, expires_delta=access_token_expires
+    )
+    return {"access_token": access_token, "token_type": "bearer"}
+
+# --- Registration ---
+@app.post("/register")
+async def register(username: str, password: str, current_user: dict = Depends(get_current_user)):
     if current_user["role"] != "admin":
-        return jsonify({"message": "Unauthorized"}), 403
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Unauthorized")
 
-    data = request.json
-    hashed_password = bcrypt.generate_password_hash(data["password"]).decode('utf-8')
-
+    hashed_password = pwd_context.hash(password)
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
-        cursor.execute("INSERT INTO users (username, password, role) VALUES (?, ?, ?)", 
-                       (data["username"], hashed_password, "user"))
+        cursor.execute("INSERT INTO users (username, password, role) VALUES (?, ?, ?)",
+                       (username, hashed_password, "user"))
         conn.commit()
         conn.close()
-        return jsonify({"message": "User registered successfully"})
+        return JSONResponse({"message": "User registered successfully"}, status_code=status.HTTP_201_CREATED)
     except sqlite3.IntegrityError:
-        return jsonify({"message": "Username already exists"}), 400
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Username already exists"
+        )
 
-# Endpoint para redirigir a un servidor privado
-@app.route('/proxy', methods=['GET'])
-@jwt_required()
-def proxy():
-    user = get_jwt_identity()
-    print(f"Usuario autenticado: {user['username']} está accediendo al servidor privado.")
-
-    # Reenvía la solicitud al servidor privado
+# --- Proxy Endpoint ---
+@app.get("/proxy")
+async def proxy(current_user: dict = Depends(get_current_user)):
+    print(f"Authenticated user: {current_user['username']} is accessing the private server.")
     try:
         response = requests.get(PRIVATE_SERVER)
-        return (response.content, response.status_code, response.headers.items())
+        response.raise_for_status()  # Raise HTTPError for bad responses (4xx or 5xx)
+        return JSONResponse(content=response.json(), status_code=response.status_code)
     except requests.RequestException as e:
-        return jsonify({"error": "No se pudo conectar al servidor privado"}), 500
-
-if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=5000, ssl_context=("/ssl/opoai.es_ssl_certificate.cer", "/ssl/opoai.key"))
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Could not connect to the private server: {e}")
