@@ -141,6 +141,8 @@ async def google_callback(request: Request, response: Response):
             secure=True, # set to True in production
         )
 
+        print(response)
+
         # Redirect to protected endpoint
         return RedirectResponse(url="https://app.opoai.es:3434/auth-callback", status_code=302)
     except Exception as e:
