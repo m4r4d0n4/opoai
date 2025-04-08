@@ -111,7 +111,7 @@ async def google_login():
     return await google_sso.get_login_redirect()
 
 @app.get("/google/callback")
-async def google_callback(request: Request, response: Response):
+async def google_callback(request: Request):
     try:
         user = await google_sso.verify_and_process(request)
         email = user.email
@@ -131,7 +131,7 @@ async def google_callback(request: Request, response: Response):
 
         # Create access token
         access_token = create_access_token(data={"sub": email, "role": role})
-
+        response= RedirectResponse(url="https://app.opoai.es:3434/auth-callback", status_code=302)
         # Set cookie
         response.set_cookie(
             key="token",
