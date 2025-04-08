@@ -8,6 +8,7 @@ import os
 from fastapi_sso.sso.google import GoogleSSO
 from jose import JWTError, jwt
 from fastapi.security import APIKeyCookie
+import httpx
 
 app = FastAPI()
 
@@ -152,6 +153,19 @@ async def check_auth(current_user: dict = Depends(get_current_user)):
         "email": current_user["sub"],
         "role": current_user["role"]
     })
+
+# --- Temas Endpoint ---
+@app.get("/temas")
+async def get_temas(current_user: dict = Depends(get_current_user)):
+    try:
+        async with httpx.AsyncClient(verify=False) as client:
+            response = await client.post("https://192.168.1.137:5678/webhook/temas")
+            response.raise_for_status()  # Raise HTTPError for bad responses (4xx or 5xx)
+            return JSONResponse(content=response.json(), status_code=response.status_code)
+    except httpx.RequestError as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Could not connect to the private server: {e}")
+    except httpx.HTTPStatusError as e:
+        raise HTTPException(status_code=e.response.status_code, detail=f"Private server returned an error: {e}")
 
 # --- Change Role Endpoint ---
 @app.post("/change_role")
