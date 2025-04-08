@@ -1,7 +1,7 @@
 from flask import Flask, request, jsonify, redirect
 from flask_cors import CORS
 from flask_bcrypt import Bcrypt
-from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
+from flask_jwt_extended import get_jwt, JWTManager, create_access_token, jwt_required, get_jwt_identity
 import sqlite3
 import requests  # Para hacer peticiones HTTP al servidor privado
 from fastapi import FastAPI
@@ -70,15 +70,26 @@ async def google_callback(request: Request):
 # Endpoint de login
 @app.route('/login', methods=['POST'])
 def login():
-    # This endpoint should be modified to use Google SSO
-    return jsonify({"message": "Please login with Google SSO"}), 401
+    data = request.json
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    
+    cursor.execute("SELECT * FROM users WHERE username = ?", (data['username'],))
+    user = cursor.fetchone()
+    
+    if user and bcrypt.check_password_hash(user["password"], data["password"]):
+        token = create_access_token(identity=user["username"], additional_claims={"role": user["role"]})
+        return jsonify(token=token, role=user["role"])
+    
+    return jsonify({"message": "Invalid credentials"}), 401
 
 # Endpoint de registro (solo accesible por admin)
 @app.route('/register', methods=['POST'])
 @jwt_required()
 def register():
-    # This endpoint should be modified to use Google SSO
-    return jsonify({"message": "Please login with Google SSO"}), 403
+    current_user = get_jwt()
+    if current_user["role"] != "admin":
+        return jsonify({"message": "Unauthorized"}), 403
 
     data = request.json
     hashed_password = bcrypt.generate_password_hash(data["password"]).decode('utf-8')
@@ -109,4 +120,4 @@ def proxy():
         return jsonify({"error": "No se pudo conectar al servidor privado"}), 500
 
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    app.run(debug=True, host='0.0.0.0', port=5000, ssl_context=("/ssl/opoai.es_ssl_certificate.cer", "/ssl/opoai.key"))

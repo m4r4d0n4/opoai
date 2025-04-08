@@ -3,16 +3,19 @@ version: '3.8'
 services:
   backend:
     build: ./backend
+    restart: unless-stopped
     ports:
       - "5000:5000"
     env_file:
       - .env
     depends_on:
       - db
+    volumes:
+      - ./ssl:/ssl:ro  # Montar la carpeta SSL como solo lectura (ro = read-only)
 
   db:
     image: postgres:13
-    restart: always
+    restart: unless-stopped
     env_file:
       - .env
     ports:
@@ -23,6 +26,7 @@ services:
 
   frontend:
     build: ./frontend
+    restart: unless-stopped
     ports:
       - "3000:3000"
     depends_on:
